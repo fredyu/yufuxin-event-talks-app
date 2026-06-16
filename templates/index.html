@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore and search Google Cloud BigQuery release notes. Select updates and tweet about them with an elegant, responsive interface.">
+    <title>BigQuery Release Explorer</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="glow-bg"></div>
+
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="var(--color-primary)" />
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>BigQuery</h1>
+                    <p>Release Explorer</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button id="theme-toggle" class="btn-icon" aria-label="Toggle dark/light theme" title="Toggle Theme">
+                    <!-- Moon Icon (Dark Mode active) -->
+                    <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <!-- Sun Icon (Light Mode active) -->
+                    <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <svg id="spinner-icon" class="btn-spinner" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- Controls (Search + Filters) -->
+        <section class="controls-section">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="search-input" placeholder="Search release notes by keyword..." aria-label="Search release notes">
+                <button id="clear-search" class="clear-btn" aria-label="Clear search" style="display: none;">&times;</button>
+            </div>
+            
+            <div class="filter-tabs" role="tablist" aria-label="Filter by type">
+                <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+                <button class="filter-tab" data-filter="Feature" role="tab" aria-selected="false">Features</button>
+                <button class="filter-tab" data-filter="Changed" role="tab" aria-selected="false">Changes</button>
+                <button class="filter-tab" data-filter="Issue" role="tab" aria-selected="false">Issues</button>
+                <button class="filter-tab" data-filter="Deprecated" role="tab" aria-selected="false">Deprecations</button>
+            </div>
+        </section>
+
+        <!-- Release Notes Timeline Feed -->
+        <section class="feed-section">
+            <div id="loading-state" class="loading-container">
+                <!-- Shimmer Skeleton Templates -->
+                <div class="skeleton-card">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-badge"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-badge"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-badge"></div>
+                        <div class="skeleton-line"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-state" class="error-container" style="display: none;">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-danger)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h2>Failed to Load Release Notes</h2>
+                <p id="error-message">Something went wrong while fetching the feed.</p>
+                <button id="retry-btn" class="btn btn-secondary">Retry</button>
+            </div>
+
+            <div id="empty-state" class="empty-container" style="display: none;">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+                <h2>No updates match your filters</h2>
+                <p>Try resetting your filters or adjusting your search query.</p>
+                <button id="reset-filters-btn" class="btn btn-secondary">Reset Filters</button>
+            </div>
+
+            <div id="notes-timeline" class="notes-timeline" style="display: none;">
+                <!-- Dynamically populated entries -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Tweet Customizer Modal -->
+    <div id="tweet-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-title">Share Update on X (Twitter)</h2>
+                <button id="close-modal" class="close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Preview Card (Simulated X Post) -->
+                <div class="x-card-preview">
+                    <div class="x-card-header">
+                        <div class="x-avatar">
+                            <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
+                                <circle cx="12" cy="12" r="10" fill="var(--color-primary-light)"></circle>
+                                <path d="M12 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V18h14v-1.5c0-2.33-4.67-3.5-7-3.5z" fill="var(--color-primary)"></path>
+                            </svg>
+                        </div>
+                        <div class="x-user-info">
+                            <span class="x-name">BigQuery Updates <span class="x-verified" title="Verified Account">✓</span></span>
+                            <span class="x-handle">@bq_updates</span>
+                        </div>
+                    </div>
+                    <div class="x-card-text" id="tweet-preview-text">
+                        <!-- Preview text will go here -->
+                    </div>
+                </div>
+
+                <!-- Editor Section -->
+                <div class="tweet-editor-container">
+                    <label for="tweet-textarea" class="input-label">Edit your post:</label>
+                    <textarea id="tweet-textarea" rows="4" maxlength="500"></textarea>
+                    
+                    <div class="editor-footer">
+                        <div class="char-count-container">
+                            <span id="char-count">0</span> / 280
+                        </div>
+                        <div class="warning-msg" id="char-warning" style="display: none;">
+                            Exceeds standard 280-character limit!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="copy-tweet-btn" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-svg">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span id="copy-btn-text">Copy Post</span>
+                </button>
+                <button id="share-tweet-btn" class="btn btn-primary">
+                    <!-- X / Twitter SVG Logo -->
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="btn-icon-svg">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                    </svg>
+                    <span>Post on X</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast" style="display: none;">
+        <span>Copied to clipboard!</span>
+    </div>
+
+    <!-- App Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
