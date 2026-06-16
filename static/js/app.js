@@ -4,7 +4,8 @@ let currentFilter = 'all';
 let searchQuery = '';
 
 // --- DOM Elements ---
-const themeToggleBtn = document.getElementById('theme-toggle');
+const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
+const exportCsvBtn = document.getElementById('export-csv-btn');
 const refreshBtn = document.getElementById('refresh-btn');
 const spinnerIcon = document.getElementById('spinner-icon');
 const searchInput = document.getElementById('search-input');
@@ -30,17 +31,77 @@ const copyBtnText = document.getElementById('copy-btn-text');
 const shareTweetBtn = document.getElementById('share-tweet-btn');
 const toast = document.getElementById('toast');
 
-// --- Theme Management ---
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+// --- Toast Utility ---
+function showToast(message) {
+    toast.querySelector('span').textContent = message;
+    toast.className = 'toast show';
+    setTimeout(() => {
+        toast.className = 'toast';
+    }, 2000);
 }
 
-themeToggleBtn.addEventListener('click', () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+// --- Theme Management ---
+const darkThemeVariables = {
+    '--bg-primary': '#080c16',
+    '--bg-secondary': '#0f172a',
+    '--bg-card': '#151f32',
+    '--bg-header': 'rgba(15, 23, 42, 0.8)',
+    '--text-primary': '#f8fafc',
+    '--text-secondary': '#94a3b8',
+    '--border-color': 'rgba(255, 255, 255, 0.07)',
+    '--border-color-hover': 'rgba(255, 255, 255, 0.15)',
+    '--card-shadow': '0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(255, 255, 255, 0.02)',
+    '--input-bg': '#0f172a',
+    '--modal-bg': 'rgba(21, 31, 50, 0.9)',
+    '--modal-backdrop': 'rgba(4, 7, 15, 0.8)',
+    '--glow-opacity': '0.15',
+    '--x-bg': '#000000',
+    '--x-border': '#2f3336',
+    '--x-text': '#e7e9ea',
+    '--x-text-muted': '#71767b'
+};
+
+const lightThemeVariables = {
+    '--bg-primary': '#f8fafc',
+    '--bg-secondary': '#f1f5f9',
+    '--bg-card': '#ffffff',
+    '--bg-header': 'rgba(255, 255, 255, 0.8)',
+    '--text-primary': '#0f172a',
+    '--text-secondary': '#475569',
+    '--border-color': 'rgba(0, 0, 0, 0.08)',
+    '--border-color-hover': 'rgba(0, 0, 0, 0.15)',
+    '--card-shadow': '0 8px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+    '--input-bg': '#ffffff',
+    '--modal-bg': 'rgba(255, 255, 255, 0.9)',
+    '--modal-backdrop': 'rgba(15, 23, 42, 0.5)',
+    '--glow-opacity': '0.05',
+    '--x-bg': '#ffffff',
+    '--x-border': '#eff3f4',
+    '--x-text': '#0f172a',
+    '--x-text-muted': '#536471'
+};
+
+function applyTheme(themeName) {
+    const variables = themeName === 'light' ? lightThemeVariables : darkThemeVariables;
+    for (const [key, value] of Object.entries(variables)) {
+        document.documentElement.style.setProperty(key, value);
+    }
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem('theme', themeName);
+    
+    if (themeToggleCheckbox) {
+        themeToggleCheckbox.checked = (themeName === 'light');
+    }
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    applyTheme(savedTheme);
+}
+
+themeToggleCheckbox.addEventListener('change', (e) => {
+    const newTheme = e.target.checked ? 'light' : 'dark';
+    applyTheme(newTheme);
 });
 
 // --- API Fetch ---
@@ -169,9 +230,37 @@ function renderTimeline() {
             cardBody.innerHTML = item.content;
             card.appendChild(cardBody);
 
-            // Footer (Tweet button)
+            // Footer (Copy and Tweet buttons)
             const cardFooter = document.createElement('div');
             cardFooter.className = 'note-card-footer';
+            
+            // Copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn-copy-card';
+            copyBtn.title = 'Copy this update to clipboard';
+            copyBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy</span>
+            `;
+            copyBtn.addEventListener('click', async () => {
+                const textToCopy = `[${item.type}] ${item.text_content}`;
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    const span = copyBtn.querySelector('span');
+                    span.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    showToast('Copied update to clipboard!');
+                    setTimeout(() => {
+                        span.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy card content:', err);
+                }
+            });
             
             const tweetBtn = document.createElement('button');
             tweetBtn.className = 'btn-tweet-share';
@@ -185,6 +274,7 @@ function renderTimeline() {
             
             tweetBtn.addEventListener('click', () => openTweetModal(item, entry.title, entry.link));
             
+            cardFooter.appendChild(copyBtn);
             cardFooter.appendChild(tweetBtn);
             card.appendChild(cardFooter);
 
@@ -356,6 +446,48 @@ resetFiltersBtn.addEventListener('click', () => {
 
 retryBtn.addEventListener('click', fetchReleaseNotes);
 refreshBtn.addEventListener('click', fetchReleaseNotes);
+exportCsvBtn.addEventListener('click', exportToCSV);
+
+// --- Export CSV Logic ---
+function exportToCSV() {
+    const filteredEntries = getFilteredData();
+    if (!filteredEntries || filteredEntries.length === 0) {
+        showToast('No data to export!');
+        return;
+    }
+
+    // CSV Headers
+    const rows = [['Date', 'Link', 'Type', 'Content']];
+
+    // Populate rows
+    filteredEntries.forEach(entry => {
+        entry.items.forEach(item => {
+            rows.push([
+                entry.title,
+                entry.link,
+                item.type,
+                item.text_content
+            ]);
+        });
+    });
+
+    // Build CSV string
+    const csvContent = rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+
+    // Create a blob and download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bigquery_release_notes_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Exported CSV!');
+}
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {

@@ -903,3 +903,113 @@ html[data-theme="light"] .icon-moon { display: block; }
         border-radius: var(--border-radius-md);
     }
 }
+
+/* --- Added Features Styles --- */
+
+/* Card footer gap adjustment */
+.note-card-footer {
+    gap: 8px;
+}
+
+/* Copy Card Button */
+.btn-copy-card {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-speed) ease;
+}
+
+.btn-copy-card:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color-hover);
+    transform: translateY(-1px);
+}
+
+.btn-copy-card.copied {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background-color: var(--color-success-light);
+}
+
+/* Theme Toggle Switch */
+.theme-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 60px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-switch .slider {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 32px;
+    transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+}
+
+.theme-switch .slider::before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--color-primary);
+    border-radius: 50%;
+    transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+}
+
+/* Move the circle button when checked (light mode) */
+.theme-switch input:checked + .slider::before {
+    transform: translateX(28px);
+}
+
+.theme-switch .switch-icon {
+    width: 14px;
+    height: 14px;
+    z-index: 1;
+    color: var(--text-secondary);
+    transition: color var(--transition-speed) ease;
+    pointer-events: none;
+}
+
+/* Active states for icons inside the slider */
+html[data-theme="dark"] .theme-switch .icon-sun {
+    color: var(--text-secondary);
+    opacity: 0.4;
+}
+html[data-theme="dark"] .theme-switch .icon-moon {
+    color: #ffffff;
+}
+
+html[data-theme="light"] .theme-switch .icon-sun {
+    color: #ffffff;
+}
+html[data-theme="light"] .theme-switch .icon-moon {
+    color: var(--text-secondary);
+    opacity: 0.4;
+}
+
